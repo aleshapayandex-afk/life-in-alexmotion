@@ -7,7 +7,7 @@ compatibility_flags = ["nodejs_compat"]
 # WEBHOOK_SECRET) задаются через `wrangler secret put`, НЕ здесь.
 [vars]
 # ID канала для публикации: @username для публичного или -100... для приватного.
-CHANNEL_ID = "@Life_in_AlexMotion"
+CHANNEL_ID = "-1003454710050"
 
 # D1. database_id подставить после `wrangler d1 create alexmotion`.
 [[d1_databases]]
