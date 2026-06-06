@@ -13,7 +13,7 @@ CHANNEL_ID = "@Life_in_AlexMotion"
 [[d1_databases]]
 binding = "DB"
 database_name = "alexmotion"
-database_id = "REPLACE_AFTER_D1_CREATE"
+database_id = "adf9d6f4-1bbe-41ef-8f95-7476df0b9eae"
 migrations_dir = "migrations"
 
 # Недельный дайджест: понедельник 09:00 UTC.
