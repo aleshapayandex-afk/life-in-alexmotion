@@ -9,6 +9,10 @@ compatibility_flags = ["nodejs_compat"]
 # ID канала для публикации: @username для публичного или -100... для приватного.
 CHANNEL_ID = "-1003454710050"
 
+# Workers AI — генерация черновиков и идей (бесплатная дневная квота).
+[ai]
+binding = "AI"
+
 # D1. database_id подставить после `wrangler d1 create alexmotion`.
 [[d1_databases]]
 binding = "DB"

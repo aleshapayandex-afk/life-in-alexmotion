@@ -1,6 +1,12 @@
 /** Окружение Worker: биндинги D1, переменные и секреты. */
+/** Минимальный интерфейс биндинга Workers AI (используем только run). */
+export interface AiBinding {
+  run(model: string, input: unknown): Promise<unknown>;
+}
+
 export interface Env {
   DB: D1Database;
+  AI: AiBinding;
 
   // Несекретные (из wrangler.toml [vars])
   CHANNEL_ID: string;
@@ -13,6 +19,9 @@ export interface Env {
 
   // Опционально: переопределить модель Claude (по умолчанию — DEFAULT_MODEL).
   CLAUDE_MODEL?: string;
+
+  // Опционально: переопределить модель Workers AI.
+  CF_MODEL?: string;
 }
 
 // --- Минимальные типы Telegram, которые реально используем ---

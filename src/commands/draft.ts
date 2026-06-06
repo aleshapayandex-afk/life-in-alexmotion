@@ -1,6 +1,6 @@
 import type { Env } from "../types";
 import { getInbox, getRecentPosts, insertDraft } from "../lib/db";
-import { generateDraft } from "../lib/claude";
+import { generateDraft } from "../lib/ai";
 import { replyToOwner } from "../lib/telegram";
 
 /**
@@ -53,7 +53,7 @@ export async function handleDraft(
   let draft: string;
   try {
     const recent = await getRecentPosts(env, 10);
-    draft = await generateDraft(env, resolved.material, recent, fetchImpl);
+    draft = await generateDraft(env, resolved.material, recent);
   } catch (err) {
     console.error("generateDraft failed", err);
     const detail = err instanceof Error ? err.message : String(err);

@@ -1,6 +1,6 @@
 import type { Env } from "../types";
 import { listNewInbox } from "../lib/db";
-import { generateIdeas } from "../lib/claude";
+import { generateIdeas } from "../lib/ai";
 import { replyToOwner } from "../lib/telegram";
 
 /** Собирает контекст для генерации идей: тема от автора или сырьё из inbox. */
@@ -32,7 +32,7 @@ export async function handleIdea(
   let ideas: string;
   try {
     const context = await buildIdeaContext(env, args);
-    ideas = await generateIdeas(env, context, fetchImpl);
+    ideas = await generateIdeas(env, context);
   } catch (err) {
     console.error("generateIdeas failed", err);
     const detail = err instanceof Error ? err.message : String(err);

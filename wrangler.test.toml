@@ -1,0 +1,13 @@
+# Конфиг ТОЛЬКО для тестов (vitest-pool-workers).
+# Без [ai]: Workers AI не поднимается в локальном тестовом рантайме,
+# а в тестах вызов модели инъектируется (runner), env.AI не используется.
+name = "life-in-alexmotion-test"
+main = "src/index.ts"
+compatibility_date = "2024-11-27"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "alexmotion"
+database_id = "test-local"
+migrations_dir = "migrations"

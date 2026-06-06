@@ -10,11 +10,13 @@ Cloudflare Worker + D1. Приём материалов (inbox), AI-чернов
 - ✅ **Фаза 0** — контент-фундамент (`voice.md`, `content/real-posts.md`)
 - ✅ **Фаза 1** — каркас Worker: webhook + auth (secret_token + user_id) + дедуп + D1
 - ✅ **Фаза 2** — inbox (приём текста/фото/видео) + `/inbox` + `/publish`
-- ✅ **Фаза 3** — Draft Agent: `/draft` (Claude + prompt caching + voice.md)
+- ✅ **Фаза 3** — Draft Agent: `/draft` (генерация + voice.md)
 - ✅ **Фаза 4** — Cron-дайджест (недельный) + `/idea` (генерация тем)
 
-**MVP функционально готов.** Команды: `/start`, `/inbox`, `/idea`, `/draft`, `/publish`.
-Осталось: задеплоить (см. ниже) — нужны бот, секреты, D1.
+**MVP задеплоен и работает.** Команды: `/start`, `/inbox`, `/idea`, `/draft`, `/publish`.
+Генерация — на **Workers AI** (Llama 3.3 70B, бесплатно). Claude (`lib/claude.ts`)
+оставлен как альтернатива для топ-качества: переключается импортом в `commands/draft.ts`
+и `commands/idea.ts` + секрет `CLAUDE_API_KEY`.
 
 План: `../thoughts/shared/specs/2026-06-04-life-in-alexmotion-plan.md`
 
@@ -38,7 +40,8 @@ src/
     idea.ts         — /idea (генерация тем через Claude)
   lib/
     telegram.ts     — клиент Bot API (ретраи, таймаут, send*)
-    claude.ts       — клиент Anthropic (prompt caching, ретраи)
+    ai.ts           — Workers AI (Llama 3.3 70B) — активный провайдер генерации
+    claude.ts       — клиент Anthropic (альтернатива, не подключён; для топ-качества)
     db.ts           — обёртки D1 (inbox, posts, drafts)
 migrations/
   0001_init.sql     — posts, inbox, drafts, processed_updates
