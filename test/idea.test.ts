@@ -1,0 +1,40 @@
+import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { env } from "cloudflare:test";
+import { buildIdeaContext } from "../src/commands/idea";
+import { insertInbox } from "../src/lib/db";
+import type { Env } from "../src/types";
+
+const testEnv = env as unknown as Env;
+
+beforeAll(async () => {
+  await testEnv.DB.exec(
+    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT, file_id TEXT, media_group_id TEXT, rubric TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
+  );
+});
+
+beforeEach(async () => {
+  await testEnv.DB.exec("DELETE FROM inbox;");
+});
+
+describe("buildIdeaContext", () => {
+  it("с темой → контекст вокруг темы", async () => {
+    const ctx = await buildIdeaContext(testEnv, "сноуборд и скорость");
+    expect(ctx).toContain("сноуборд и скорость");
+  });
+
+  it("без темы и пустой inbox → fallback на рубрики", async () => {
+    const ctx = await buildIdeaContext(testEnv, "");
+    expect(ctx.toLowerCase()).toContain("рубрик");
+  });
+
+  it("без темы, но с материалом → собирает заметки", async () => {
+    await insertInbox(testEnv, {
+      kind: "text",
+      text: "забег в песчаную бурю",
+      file_id: null,
+      media_group_id: null,
+    });
+    const ctx = await buildIdeaContext(testEnv, "");
+    expect(ctx).toContain("песчаную бурю");
+  });
+});

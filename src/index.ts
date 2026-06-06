@@ -2,6 +2,7 @@ import type { Env, TgUpdate } from "./types";
 import { isValidWebhookSecret, isOwner, extractMessage } from "./auth";
 import { markUpdateProcessed } from "./dedup";
 import { handleMessage } from "./router";
+import { handleScheduled } from "./cron";
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -57,7 +58,11 @@ export default {
     return new Response("ok", { status: 200 });
   },
 
-  async scheduled(_event: ScheduledController, _env: Env, _ctx: ExecutionContext): Promise<void> {
-    // Cron-дайджест — Фаза 4.
+  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      handleScheduled(env).catch((err) => {
+        console.error("scheduled digest failed", err);
+      }),
+    );
   },
 } satisfies ExportedHandler<Env>;

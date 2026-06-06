@@ -11,7 +11,10 @@ Cloudflare Worker + D1. Приём материалов (inbox), AI-чернов
 - ✅ **Фаза 1** — каркас Worker: webhook + auth (secret_token + user_id) + дедуп + D1
 - ✅ **Фаза 2** — inbox (приём текста/фото/видео) + `/inbox` + `/publish`
 - ✅ **Фаза 3** — Draft Agent: `/draft` (Claude + prompt caching + voice.md)
-- ⬜ **Фаза 4** — Cron-дайджест идей
+- ✅ **Фаза 4** — Cron-дайджест (недельный) + `/idea` (генерация тем)
+
+**MVP функционально готов.** Команды: `/start`, `/inbox`, `/idea`, `/draft`, `/publish`.
+Осталось: задеплоить (см. ниже) — нужны бот, секреты, D1.
 
 План: `../thoughts/shared/specs/2026-06-04-life-in-alexmotion-plan.md`
 
@@ -19,7 +22,8 @@ Cloudflare Worker + D1. Приём материалов (inbox), AI-чернов
 
 ```
 src/
-  index.ts          — точка входа: fetch() (webhook) + scheduled() (cron-заглушка)
+  index.ts          — точка входа: fetch() (webhook) + scheduled() (cron)
+  cron.ts           — недельный дайджест inbox (детерминированный, без Claude)
   auth.ts           — secret_token + проверка владельца
   dedup.ts          — идемпотентность по update_id
   router.ts         — разбор команд, маршрутизация сообщений
@@ -31,6 +35,7 @@ src/
     inbox.ts        — /inbox (список сырья)
     publish.ts      — /publish (текст или inbox-id в канал)
     draft.ts        — /draft (генерация черновика через Claude)
+    idea.ts         — /idea (генерация тем через Claude)
   lib/
     telegram.ts     — клиент Bot API (ретраи, таймаут, send*)
     claude.ts       — клиент Anthropic (prompt caching, ретраи)
@@ -43,6 +48,8 @@ test/
   inbox.test.ts     — сценарий 7
   publish.test.ts   — сценарии 6,8
   draft.test.ts     — сценарий 2
+  cron.test.ts      — сценарий 5
+  idea.test.ts      — контекст идей
 voice.md            — стиль канала (источник для src/voice.ts)
 content/            — реальные посты-эталоны
 ```

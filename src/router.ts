@@ -4,6 +4,7 @@ import { intakeMessage } from "./inbox-intake";
 import { handleInbox } from "./commands/inbox";
 import { handlePublish } from "./commands/publish";
 import { handleDraft } from "./commands/draft";
+import { handleIdea } from "./commands/idea";
 
 /** Разбор «/command аргументы» из текста сообщения. */
 export function parseCommand(
@@ -41,6 +42,7 @@ export async function handleMessage(
           "Привет! Это бот канала Life in AlexMotion.\n\n" +
             "Команды:\n" +
             "/inbox — показать накопленное сырьё\n" +
+            "/idea — идеи для постов\n" +
             "/draft <id|тема> — сгенерировать черновик\n" +
             "/publish <id|текст> — опубликовать в канал\n\n" +
             "Просто пришли текст, фото или видео — сохраню в inbox.\n\n" +
@@ -58,11 +60,7 @@ export async function handleMessage(
         await handleDraft(env, parsed.args, fetchImpl);
         return;
       case "/idea":
-        await replyToOwner(
-          env,
-          `Команда ${parsed.command} появится в Фазе 4.`,
-          fetchImpl,
-        );
+        await handleIdea(env, parsed.args, fetchImpl);
         return;
       default:
         await replyToOwner(env, `Неизвестная команда: ${parsed.command}`, fetchImpl);

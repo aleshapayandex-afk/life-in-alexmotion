@@ -16,6 +16,6 @@ database_name = "alexmotion"
 database_id = "REPLACE_AFTER_D1_CREATE"
 migrations_dir = "migrations"
 
-# Cron-дайджест появится в Фазе 4:
-# [triggers]
-# crons = ["0 9 * * 1"]  # понедельник 09:00 UTC
+# Недельный дайджест: понедельник 09:00 UTC.
+[triggers]
+crons = ["0 9 * * 1"]

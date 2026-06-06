@@ -52,28 +52,18 @@ function extractText(resp: unknown): string {
   return text.trim();
 }
 
-/**
- * Генерация черновика поста по материалу.
- * @param material сырьё из inbox или тема поста.
- * @param recentPosts последние посты для контекста стиля.
- * @param fetchImpl инъекция fetch для тестов.
- */
-export async function generateDraft(
+/** Общее ядро: POST в Messages API с ретраями/таймаутом, возврат текста. */
+async function callClaude(
   env: Env,
-  material: string,
-  recentPosts: string[],
-  fetchImpl: typeof fetch = fetch,
+  system: SystemBlock[],
+  userContent: string,
+  fetchImpl: typeof fetch,
 ): Promise<string> {
   const body = {
     model: env.CLAUDE_MODEL ?? DEFAULT_MODEL,
     max_tokens: MAX_TOKENS,
-    system: buildSystem(recentPosts),
-    messages: [
-      {
-        role: "user",
-        content: `Материал для поста:\n\n${material}\n\nНапиши готовый пост в стиле канала.`,
-      },
-    ],
+    system,
+    messages: [{ role: "user", content: userContent }],
   };
 
   let lastErr: unknown;
@@ -113,6 +103,43 @@ export async function generateDraft(
     }
   }
   throw lastErr ?? new ClaudeError("Claude недоступен", 0);
+}
+
+/**
+ * Генерация черновика поста по материалу.
+ * @param material сырьё из inbox или тема поста.
+ * @param recentPosts последние посты для контекста стиля.
+ */
+export function generateDraft(
+  env: Env,
+  material: string,
+  recentPosts: string[],
+  fetchImpl: typeof fetch = fetch,
+): Promise<string> {
+  return callClaude(
+    env,
+    buildSystem(recentPosts),
+    `Материал для поста:\n\n${material}\n\nНапиши готовый пост в стиле канала.`,
+    fetchImpl,
+  );
+}
+
+const IDEAS_SYSTEM = `Ты помогаешь автору Telegram-канала «Life in AlexMotion» придумывать темы для постов. Рубрики: TRAIN (бег, кроссфит, сноуборд), THINK (AI, технологии, стройка проекта, системное мышление), EXPLORE (путешествия, локации), LIFE (дисциплина, рефлексия). Тон автора — честный, конкретный, с цифрами, без коучинговых штампов.
+Предложи 3 короткие идеи для постов. Формат: каждая идея — одна строка «[РУБРИКА] суть в 5-10 словах». Без вступлений и пояснений.`;
+
+/**
+ * Генерация 2-3 тем для постов.
+ * @param context краткое описание накопленного материала или запрос автора.
+ */
+export function generateIdeas(
+  env: Env,
+  context: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string> {
+  const system: SystemBlock[] = [
+    { type: "text", text: IDEAS_SYSTEM, cache_control: { type: "ephemeral" } },
+  ];
+  return callClaude(env, system, context, fetchImpl);
 }
 
 function backoff(attempt: number): Promise<void> {
