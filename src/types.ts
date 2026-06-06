@@ -10,6 +10,9 @@ export interface Env {
   CLAUDE_API_KEY: string;
   OWNER_USER_ID: string; // строкой; сравниваем с from.id
   WEBHOOK_SECRET: string;
+
+  // Опционально: переопределить модель Claude (по умолчанию — DEFAULT_MODEL).
+  CLAUDE_MODEL?: string;
 }
 
 // --- Минимальные типы Telegram, которые реально используем ---

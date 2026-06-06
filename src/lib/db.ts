@@ -77,6 +77,20 @@ export async function insertPost(env: Env, post: NewPostInput): Promise<number> 
   return Number(res.meta.last_row_id);
 }
 
+/** Сохранить черновик. Возвращает id. */
+export async function insertDraft(
+  env: Env,
+  content: string,
+  inboxId: number | null,
+): Promise<number> {
+  const res = await env.DB.prepare(
+    `INSERT INTO drafts (inbox_id, content, status) VALUES (?, ?, 'draft')`,
+  )
+    .bind(inboxId, content)
+    .run();
+  return Number(res.meta.last_row_id);
+}
+
 /** Последние N постов (для контекста стиля Draft Agent — Фаза 3). */
 export async function getRecentPosts(env: Env, limit = 10): Promise<string[]> {
   const res = await env.DB.prepare(

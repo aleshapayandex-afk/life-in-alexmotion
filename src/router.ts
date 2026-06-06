@@ -3,6 +3,7 @@ import { replyToOwner } from "./lib/telegram";
 import { intakeMessage } from "./inbox-intake";
 import { handleInbox } from "./commands/inbox";
 import { handlePublish } from "./commands/publish";
+import { handleDraft } from "./commands/draft";
 
 /** Разбор «/command аргументы» из текста сообщения. */
 export function parseCommand(
@@ -40,6 +41,7 @@ export async function handleMessage(
           "Привет! Это бот канала Life in AlexMotion.\n\n" +
             "Команды:\n" +
             "/inbox — показать накопленное сырьё\n" +
+            "/draft <id|тема> — сгенерировать черновик\n" +
             "/publish <id|текст> — опубликовать в канал\n\n" +
             "Просто пришли текст, фото или видео — сохраню в inbox.\n\n" +
             "Train. Think. Explore.",
@@ -52,11 +54,13 @@ export async function handleMessage(
       case "/publish":
         await handlePublish(env, parsed.args, fetchImpl);
         return;
-      case "/idea":
       case "/draft":
+        await handleDraft(env, parsed.args, fetchImpl);
+        return;
+      case "/idea":
         await replyToOwner(
           env,
-          `Команда ${parsed.command} появится в следующих фазах.`,
+          `Команда ${parsed.command} появится в Фазе 4.`,
           fetchImpl,
         );
         return;
