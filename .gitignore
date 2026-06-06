@@ -1,0 +1,24 @@
+# Зависимости
+node_modules/
+
+# Cloudflare / Wrangler
+.wrangler/
+.dev.vars
+dist/
+
+# Секреты и окружение
+.env
+*.local
+
+# Логи
+*.log
+npm-debug.log*
+
+# IDE / ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Ретроспективы (по договорённости)
+retrospectives/

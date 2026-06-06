@@ -1,0 +1,21 @@
+name = "life-in-alexmotion"
+main = "src/index.ts"
+compatibility_date = "2024-11-27"
+compatibility_flags = ["nodejs_compat"]
+
+# Несекретные переменные. Секреты (BOT_TOKEN, CLAUDE_API_KEY, OWNER_USER_ID,
+# WEBHOOK_SECRET) задаются через `wrangler secret put`, НЕ здесь.
+[vars]
+# ID канала для публикации: @username для публичного или -100... для приватного.
+CHANNEL_ID = "@Life_in_AlexMotion"
+
+# D1. database_id подставить после `wrangler d1 create alexmotion`.
+[[d1_databases]]
+binding = "DB"
+database_name = "alexmotion"
+database_id = "REPLACE_AFTER_D1_CREATE"
+migrations_dir = "migrations"
+
+# Cron-дайджест появится в Фазе 4:
+# [triggers]
+# crons = ["0 9 * * 1"]  # понедельник 09:00 UTC
