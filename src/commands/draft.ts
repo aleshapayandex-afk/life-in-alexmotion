@@ -56,11 +56,8 @@ export async function handleDraft(
     draft = await generateDraft(env, resolved.material, recent, fetchImpl);
   } catch (err) {
     console.error("generateDraft failed", err);
-    await replyToOwner(
-      env,
-      "Не получилось сгенерировать черновик (Claude недоступен). Попробуй позже.",
-      fetchImpl,
-    );
+    const detail = err instanceof Error ? err.message : String(err);
+    await replyToOwner(env, `Не получилось сгенерировать черновик.\n\n${detail}`, fetchImpl);
     return;
   }
 

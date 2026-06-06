@@ -91,7 +91,9 @@ async function callClaude(
         await backoff(attempt);
         continue;
       }
-      throw new ClaudeError(`Claude ${res.status}`, res.status);
+      // 4xx — включаем тело ответа Anthropic для диагностики.
+      const errBody = await res.text().catch(() => "");
+      throw new ClaudeError(`Claude ${res.status}: ${errBody.slice(0, 300)}`, res.status);
     } catch (err) {
       // Перманентные ошибки (4xx, пустой ответ) не ретраим.
       if (err instanceof ClaudeError) throw err;

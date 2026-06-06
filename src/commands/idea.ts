@@ -35,7 +35,8 @@ export async function handleIdea(
     ideas = await generateIdeas(env, context, fetchImpl);
   } catch (err) {
     console.error("generateIdeas failed", err);
-    await replyToOwner(env, "Не получилось придумать идеи (Claude недоступен). Попробуй позже.", fetchImpl);
+    const detail = err instanceof Error ? err.message : String(err);
+    await replyToOwner(env, `Не получилось придумать идеи.\n\n${detail}`, fetchImpl);
     return;
   }
 
