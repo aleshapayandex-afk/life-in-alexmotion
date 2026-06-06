@@ -93,6 +93,8 @@ async function callClaude(
       }
       throw new ClaudeError(`Claude ${res.status}`, res.status);
     } catch (err) {
+      // Перманентные ошибки (4xx, пустой ответ) не ретраим.
+      if (err instanceof ClaudeError) throw err;
       lastErr = err;
       if (attempt < MAX_ATTEMPTS) {
         await backoff(attempt);

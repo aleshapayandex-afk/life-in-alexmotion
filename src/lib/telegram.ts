@@ -39,7 +39,15 @@ export async function callTelegram(
       });
 
       if (res.ok) {
-        return await res.json();
+        // HTTP 200 ещё не значит успех: Bot API кладёт ошибку в тело {ok:false,description}.
+        const body = (await res.json()) as { ok?: boolean; description?: string };
+        if (body.ok === false) {
+          throw new TelegramError(
+            `Telegram ${method}: ${body.description ?? "ok=false"}`,
+            200,
+          );
+        }
+        return body;
       }
 
       // 429 и 5xx — ретраим; 4xx (кроме 429) — нет смысла.
@@ -50,8 +58,10 @@ export async function callTelegram(
       }
       throw new TelegramError(`Telegram ${method} ${res.status}`, res.status);
     } catch (err) {
+      // Перманентные ошибки (4xx кроме 429, и {ok:false}) не ретраим.
+      if (err instanceof TelegramError) throw err;
+      // Сетевые ошибки/таймаут — ретраим.
       lastErr = err;
-      // Сетевые ошибки/таймаут — тоже ретраим.
       if (attempt < MAX_ATTEMPTS) {
         await backoff(attempt);
         continue;

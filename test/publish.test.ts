@@ -116,6 +116,43 @@ describe("publishInboxItem — постинг сохранённого file_id (
   });
 });
 
+describe("publish — отказ Telegram (ревью Major #2)", () => {
+  it("Bot API {ok:false} на 200 → ошибка и inbox НЕ помечается used", async () => {
+    const id = await insertInbox(testEnv, {
+      kind: "photo",
+      text: "не уйдёт в канал",
+      file_id: "X",
+      media_group_id: null,
+    });
+
+    const failFetch = (async () =>
+      new Response(JSON.stringify({ ok: false, description: "chat not found" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })) as unknown as typeof fetch;
+
+    await expect(publishInboxItem(testEnv, id, failFetch)).rejects.toThrow();
+
+    // inbox остался new — можно повторить публикацию после исправления.
+    const row = await getInbox(testEnv, id);
+    expect(row!.status).toBe("new");
+  });
+
+  it("перманентная ошибка не ретраится (один вызов fetch)", async () => {
+    let calls = 0;
+    const failFetch = (async () => {
+      calls++;
+      return new Response(JSON.stringify({ ok: false, description: "bad" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as unknown as typeof fetch;
+
+    await expect(publishText(testEnv, "текст", failFetch)).rejects.toThrow();
+    expect(calls).toBe(1);
+  });
+});
+
 describe("publishText — литеральный текст в канал", () => {
   it("публикует текст через sendMessage", async () => {
     const { fn, calls } = mockFetch(101);

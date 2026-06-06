@@ -110,9 +110,15 @@ export async function handlePublish(
     return;
   }
 
-  const result = /^\d+$/.test(arg)
-    ? await publishInboxItem(env, Number(arg), fetchImpl)
-    : await publishText(env, arg, fetchImpl);
-
-  await replyToOwner(env, result.message, fetchImpl);
+  try {
+    const result = /^\d+$/.test(arg)
+      ? await publishInboxItem(env, Number(arg), fetchImpl)
+      : await publishText(env, arg, fetchImpl);
+    await replyToOwner(env, result.message, fetchImpl);
+  } catch (err) {
+    // Ошибка отправки в канал (нет прав, лимит и т.п.) — inbox не помечен used.
+    console.error("publish failed", err);
+    const detail = err instanceof Error ? err.message : "неизвестная ошибка";
+    await replyToOwner(env, `Не удалось опубликовать: ${detail}`, fetchImpl);
+  }
 }

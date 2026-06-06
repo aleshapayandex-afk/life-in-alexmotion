@@ -3,6 +3,7 @@ import { isValidWebhookSecret, isOwner, extractMessage } from "./auth";
 import { markUpdateProcessed } from "./dedup";
 import { handleMessage } from "./router";
 import { handleScheduled } from "./cron";
+import { replyToOwner } from "./lib/telegram";
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -49,9 +50,16 @@ export default {
     }
 
     // 5. Отвечаем Telegram мгновенно, тяжёлую работу — в waitUntil.
+    //    Дедуп уже зафиксирован (повторов не будет), поэтому при падении
+    //    обработчика обязательно уведомляем владельца — иначе команда тихо теряется.
     ctx.waitUntil(
-      handleMessage(env, msg).catch((err) => {
+      handleMessage(env, msg).catch(async (err) => {
         console.error("handleMessage failed", err);
+        try {
+          await replyToOwner(env, "⚠️ Ошибка при обработке команды. Попробуй ещё раз.");
+        } catch (notifyErr) {
+          console.error("owner notify failed", notifyErr);
+        }
       }),
     );
 

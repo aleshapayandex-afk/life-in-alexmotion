@@ -5,16 +5,21 @@ export const TELEGRAM_SECRET_HEADER = "x-telegram-bot-api-secret-token";
 
 /**
  * Проверяет, что запрос пришёл именно от Telegram с нашим secret_token.
- * Сравнение без раннего возврата по длине — достаточно для нашей модели угроз.
+ * Секрет передаётся в заголовке поверх TLS; обычного сравнения достаточно
+ * для нашей модели угроз.
  */
 export function isValidWebhookSecret(request: Request, env: Env): boolean {
   const got = request.headers.get(TELEGRAM_SECRET_HEADER);
   return typeof got === "string" && got === env.WEBHOOK_SECRET;
 }
 
-/** Достаёт сообщение из апдейта (обычное / пересланное в канал не трогаем). */
+/**
+ * Достаёт сообщение из апдейта. Берём только новые сообщения:
+ * edited_message игнорируем (правка старого сообщения не должна повторно
+ * выполнять команду или плодить дубли в inbox); channel_post не трогаем.
+ */
 export function extractMessage(update: TgUpdate): TgMessage | undefined {
-  return update.message ?? update.edited_message;
+  return update.message;
 }
 
 /**
