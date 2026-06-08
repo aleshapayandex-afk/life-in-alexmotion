@@ -1,7 +1,8 @@
 import type { Env } from "../types";
-import { getInbox, getRecentPosts, insertDraft } from "../lib/db";
+import { getInbox, insertDraft } from "../lib/db";
 import { generateDraft } from "../lib/ai";
 import { replyToOwner } from "../lib/telegram";
+import { formatDraft } from "../draft-format";
 
 /**
  * Определяет материал для черновика по аргументу команды.
@@ -13,7 +14,7 @@ export async function resolveMaterial(
 ): Promise<{ ok: true; material: string; inboxId: number | null } | { ok: false; error: string }> {
   const arg = args.trim();
   if (!arg) {
-    return { ok: false, error: "Укажи тему или id из inbox: /draft <id|тема>" };
+    return { ok: false, error: "Пришли номер из inbox или тему." };
   }
 
   if (/^\d+$/.test(arg)) {
@@ -21,13 +22,11 @@ export async function resolveMaterial(
     const item = await getInbox(env, id);
     if (!item) return { ok: false, error: `Запись #${id} не найдена.` };
 
-    const parts: string[] = [];
-    if (item.text) parts.push(item.text);
-    if (item.kind !== "text") parts.push(`(прикреплён ${item.kind})`);
-    if (parts.length === 0) {
+    const material = item.text?.trim();
+    if (!material) {
       return { ok: false, error: `В записи #${id} нет текста для черновика.` };
     }
-    return { ok: true, material: parts.join("\n"), inboxId: id };
+    return { ok: true, material, inboxId: id };
   }
 
   return { ok: true, material: arg, inboxId: null };
@@ -52,8 +51,7 @@ export async function handleDraft(
 
   let draft: string;
   try {
-    const recent = await getRecentPosts(env, 10);
-    draft = await generateDraft(env, resolved.material, recent);
+    draft = await generateDraft(env, resolved.material, []);
   } catch (err) {
     console.error("generateDraft failed", err);
     const detail = err instanceof Error ? err.message : String(err);
@@ -61,10 +59,6 @@ export async function handleDraft(
     return;
   }
 
-  const draftId = await insertDraft(env, draft, resolved.inboxId);
-  await replyToOwner(
-    env,
-    `Черновик #${draftId}:\n\n${draft}\n\n— — —\nОтредактируй и опубликуй: /publish <текст>`,
-    fetchImpl,
-  );
+  await insertDraft(env, draft, resolved.inboxId);
+  await replyToOwner(env, formatDraft(draft), fetchImpl, { parse_mode: "HTML" });
 }

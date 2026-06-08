@@ -1,8 +1,8 @@
 import type { Env, TgMessage } from "./types";
-import { replyToOwner } from "./lib/telegram";
+import { replyToOwner, setMyCommands } from "./lib/telegram";
+import { getPending, setPending, clearPending } from "./lib/db";
 import { intakeMessage } from "./inbox-intake";
 import { handleInbox } from "./commands/inbox";
-import { handlePublish } from "./commands/publish";
 import { handleDraft } from "./commands/draft";
 import { handleIdea } from "./commands/idea";
 
@@ -35,26 +35,38 @@ export async function handleMessage(
   const parsed = parseCommand(msg.text);
 
   if (parsed) {
+    // /draft без аргументов — переходим в режим ожидания материала.
+    // Следующее сообщение (номер inbox или тема) уйдёт в Draft Agent.
+    if (parsed.command === "/draft" && !parsed.args) {
+      await setPending(env, "draft");
+      await replyToOwner(
+        env,
+        "Жду материал для черновика. Пришли отдельным сообщением номер из inbox или тему.",
+        fetchImpl,
+      );
+      return;
+    }
+
+    // Любая другая команда отменяет режим ожидания.
+    await clearPending(env);
+
     switch (parsed.command) {
       case "/start":
+        await setMyCommands(env, fetchImpl);
         await replyToOwner(
           env,
           "Привет! Это бот канала Life in AlexMotion.\n\n" +
             "Команды:\n" +
             "/inbox — показать накопленное сырьё\n" +
             "/idea — идеи для постов\n" +
-            "/draft <id|тема> — сгенерировать черновик\n" +
-            "/publish <id|текст> — опубликовать в канал\n\n" +
-            "Просто пришли текст, фото или видео — сохраню в inbox.\n\n" +
+            "/draft — сгенерировать черновик (затем пришли номер или тему)\n\n" +
+            "Просто пришли текст — сохраню в inbox.\n\n" +
             "Train. Think. Explore.",
           fetchImpl,
         );
         return;
       case "/inbox":
         await handleInbox(env, fetchImpl);
-        return;
-      case "/publish":
-        await handlePublish(env, parsed.args, fetchImpl);
         return;
       case "/draft":
         await handleDraft(env, parsed.args, fetchImpl);
@@ -68,12 +80,20 @@ export async function handleMessage(
     }
   }
 
-  // Не команда — в inbox.
+  // Не команда. Если ждём материал для черновика — отдаём его в Draft Agent.
+  const pending = await getPending(env);
+  if (pending === "draft") {
+    await clearPending(env);
+    await handleDraft(env, msg.text?.trim() ?? "", fetchImpl);
+    return;
+  }
+
+  // Иначе — в inbox.
   const id = await intakeMessage(env, msg);
   if (id === null) {
     await replyToOwner(
       env,
-      "Не понял материал. Пришли текст, фото, видео или документ.",
+      "Принимаю только текстовые заметки. Фото и видео добавляй напрямую в канал.",
       fetchImpl,
     );
     return;

@@ -8,7 +8,7 @@ const testEnv = env as unknown as Env;
 
 beforeAll(async () => {
   await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT, file_id TEXT, media_group_id TEXT, rubric TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
+    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
   );
 });
 
@@ -28,12 +28,7 @@ describe("buildIdeaContext", () => {
   });
 
   it("без темы, но с материалом → собирает заметки", async () => {
-    await insertInbox(testEnv, {
-      kind: "text",
-      text: "забег в песчаную бурю",
-      file_id: null,
-      media_group_id: null,
-    });
+    await insertInbox(testEnv, { text: "забег в песчаную бурю" });
     const ctx = await buildIdeaContext(testEnv, "");
     expect(ctx).toContain("песчаную бурю");
   });

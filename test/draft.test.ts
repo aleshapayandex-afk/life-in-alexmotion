@@ -10,7 +10,7 @@ const testEnv = env as unknown as Env;
 
 beforeAll(async () => {
   await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT, file_id TEXT, media_group_id TEXT, rubric TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
+    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
   );
 });
 
@@ -96,18 +96,12 @@ describe("resolveMaterial — выбор источника", () => {
     }
   });
 
-  it("число → материал из inbox с пометкой о медиа", async () => {
-    const id = await insertInbox(testEnv, {
-      kind: "photo",
-      text: "горы, 102 км/ч",
-      file_id: "F",
-      media_group_id: null,
-    });
+  it("число → материал из inbox", async () => {
+    const id = await insertInbox(testEnv, { text: "горы, 102 км/ч" });
     const r = await resolveMaterial(testEnv, String(id));
     expect(r.ok).toBe(true);
     if (r.ok) {
       expect(r.material).toContain("102 км/ч");
-      expect(r.material).toContain("photo");
       expect(r.inboxId).toBe(id);
     }
   });

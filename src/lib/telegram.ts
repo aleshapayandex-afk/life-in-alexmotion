@@ -89,14 +89,15 @@ function messageId(resp: unknown): number | null {
   return r?.result?.message_id ?? null;
 }
 
-/** Отправка текстового сообщения. */
+/** Отправка текстового сообщения. `extra` — доп. поля (например, parse_mode). */
 export function sendMessage(
   env: Env,
   chatId: string | number,
   text: string,
   fetchImpl: typeof fetch = fetch,
+  extra: Record<string, unknown> = {},
 ): Promise<unknown> {
-  return callTelegram(env, "sendMessage", { chat_id: chatId, text }, fetchImpl);
+  return callTelegram(env, "sendMessage", { chat_id: chatId, text, ...extra }, fetchImpl);
 }
 
 /** Публикация текстового поста в канал. Возвращает message_id или null. */
@@ -157,6 +158,26 @@ export function replyToOwner(
   env: Env,
   text: string,
   fetchImpl: typeof fetch = fetch,
+  extra: Record<string, unknown> = {},
 ): Promise<unknown> {
-  return sendMessage(env, env.OWNER_USER_ID, text, fetchImpl);
+  return sendMessage(env, env.OWNER_USER_ID, text, fetchImpl, extra);
+}
+
+/** Регистрирует список команд в Telegram (меню "/" в интерфейсе бота). */
+export function setMyCommands(
+  env: Env,
+  fetchImpl: typeof fetch = fetch,
+): Promise<unknown> {
+  return callTelegram(
+    env,
+    "setMyCommands",
+    {
+      commands: [
+        { command: "inbox", description: "Показать накопленное сырьё" },
+        { command: "idea", description: "Идеи для постов" },
+        { command: "draft", description: "Сгенерировать черновик поста" },
+      ],
+    },
+    fetchImpl,
+  );
 }

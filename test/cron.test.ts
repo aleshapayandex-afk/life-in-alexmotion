@@ -8,7 +8,7 @@ const testEnv = env as unknown as Env;
 
 beforeAll(async () => {
   await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, text TEXT, file_id TEXT, media_group_id TEXT, rubric TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
+    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
   );
 });
 
@@ -41,18 +41,8 @@ describe("handleScheduled — недельный дайджест (сценар�
   });
 
   it("есть материал: шлёт один дайджест с количеством и пунктами", async () => {
-    await insertInbox(testEnv, {
-      kind: "text",
-      text: "идея про дисциплину",
-      file_id: null,
-      media_group_id: null,
-    });
-    await insertInbox(testEnv, {
-      kind: "photo",
-      text: "горы",
-      file_id: "F",
-      media_group_id: null,
-    });
+    await insertInbox(testEnv, { text: "идея про дисциплину" });
+    await insertInbox(testEnv, { text: "горы" });
 
     const { fn, calls } = mockFetch();
     const sent = await handleScheduled(testEnv, fn);
