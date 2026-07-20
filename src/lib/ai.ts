@@ -3,7 +3,9 @@ import { STYLE_GUIDE } from "../voice";
 
 // Сильнейшая доступная инструктивная модель Workers AI на сегодня.
 const DEFAULT_MODEL = "@cf/openai/gpt-oss-120b";
-const MAX_TOKENS = 1024;
+// gpt-oss-120b тратит часть бюджета на скрытый reasoning до финального текста,
+// поэтому лимит выше, чем нужно только для 1000-2000 знаков поста.
+const MAX_TOKENS = 3000;
 
 /** Инъекция вызова модели для тестируемости (по умолчанию — env.AI.run). */
 export type AiRunner = (model: string, input: unknown) => Promise<unknown>;
