@@ -43,14 +43,16 @@ function renderBody(lines: string[]): string {
 /**
  * Готовит черновик к показу в Telegram:
  *  1) ё → е (у автора нет ё);
- *  2) заголовок (первая строка) жирным;
- *  3) пустая строка между абзацами (списки остаются плотными);
- *  4) подпись «Train. Think. Explore.» жирной.
+ *  2) тире (длинное и короткое) → дефис (у автора только дефис с пробелами);
+ *  3) заголовок (первая строка) жирным;
+ *  4) пустая строка между абзацами (списки остаются плотными);
+ *  5) подпись «Train. Think. Explore.» жирной.
  * Результат отправлять с parse_mode: "HTML".
  */
 export function formatDraft(raw: string): string {
   const noYo = raw.replace(/ё/g, "е").replace(/Ё/g, "Е");
-  const body = stripTrailingSignature(noYo).trim();
+  const noDash = noYo.replace(/[–—]/g, "-");
+  const body = stripTrailingSignature(noDash).trim();
   const lines = body
     .split("\n")
     .map((l) => l.trim())

@@ -48,6 +48,15 @@ describe("formatDraft", () => {
     expect(out).toContain("🥈 2 место - кроссфит\n\nВымотался сильно.");
   });
 
+  it("заменяет тире (длинное и короткое) на дефис", () => {
+    const out = formatDraft(
+      "Заголовок – с тире\nТекст — с длинным тире и – с коротким.\nTrain. Think. Explore.",
+    );
+    expect(out).not.toMatch(/[–—]/);
+    expect(out).toContain("Заголовок - с тире");
+    expect(out).toContain("Текст - с длинным тире и - с коротким.");
+  });
+
   it("экранирует HTML-спецсимволы в теле", () => {
     const out = formatDraft("Темп < 3:40 & набор > 100 м.\nTrain. Think. Explore.");
     expect(out).toContain("Темп &lt; 3:40 &amp; набор &gt; 100 м.");
