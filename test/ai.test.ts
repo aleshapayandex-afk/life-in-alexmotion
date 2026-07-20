@@ -48,6 +48,14 @@ describe("generateDraft (Workers AI)", () => {
     const empty: AiRunner = async () => ({ response: "" });
     await expect(generateDraft(testEnv, "тема", [], empty)).rejects.toThrow();
   });
+
+  it("user-сообщение не содержит хардкод «три шага»", async () => {
+    const { runner, calls } = mockRunner();
+    await generateDraft(testEnv, "тема", [], runner);
+    const content = calls[0]!.input.messages[1].content as string;
+    expect(content).not.toContain("Три шага");
+    expect(content).not.toContain("конкретика, цифры, честный итог");
+  });
 });
 
 describe("generateIdeas (Workers AI)", () => {
