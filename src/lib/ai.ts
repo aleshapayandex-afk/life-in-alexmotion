@@ -2,7 +2,7 @@ import type { Env } from "../types";
 import { STYLE_GUIDE } from "../voice";
 
 // Сильнейшая доступная инструктивная модель Workers AI на сегодня.
-const DEFAULT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const DEFAULT_MODEL = "@cf/openai/gpt-oss-120b";
 const MAX_TOKENS = 1024;
 
 /** Инъекция вызова модели для тестируемости (по умолчанию — env.AI.run). */
@@ -39,9 +39,9 @@ async function run(
       { role: "user", content: user },
     ],
     max_tokens: MAX_TOKENS,
-  })) as { response?: string };
+  })) as { response?: string; choices?: { message?: { content?: string } }[] };
 
-  const text = res?.response?.trim();
+  const text = res?.response?.trim() ?? res.choices?.[0]?.message?.content?.trim();
   if (!text) throw new AiError("Пустой ответ модели");
   return text;
 }

@@ -56,6 +56,12 @@ describe("generateDraft (Workers AI)", () => {
     expect(content).not.toContain("Три шага");
     expect(content).not.toContain("конкретика, цифры, честный итог");
   });
+
+  it("использует модель gpt-oss-120b по умолчанию", async () => {
+    const { runner, calls } = mockRunner();
+    await generateDraft(testEnv, "тема", [], runner);
+    expect(calls[0]!.model).toBe("@cf/openai/gpt-oss-120b");
+  });
 });
 
 describe("generateIdeas (Workers AI)", () => {
