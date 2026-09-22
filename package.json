@@ -15,10 +15,10 @@
     "gen:voice": "node scripts/gen-voice-examples.mjs"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.5.40",
-    "@cloudflare/workers-types": "^4.20241127.0",
+    "@cloudflare/vitest-pool-workers": "^0.12.21",
+    "@cloudflare/workers-types": "^5.20260922.1",
     "typescript": "^5.7.2",
     "vitest": "~2.1.8",
-    "wrangler": "^3.91.0"
+    "wrangler": "^4.136.2"
   }
 }
