@@ -57,6 +57,28 @@ describe("formatDraft", () => {
     expect(out).toContain("Текст - с длинным тире и - с коротким.");
   });
 
+  it("вычищает невидимые спецпробелы и неразрывный дефис", () => {
+    // Реальный улов с живого прогона gpt-oss-120b: десять узких неразрывных
+    // пробелов (U+202F) и неразрывный дефис (U+2011) в одном черновике.
+    // Старая чистка знала только про «–» и «—» и всё это пропускала.
+    const raw = [
+      "Эль‑Аламейн 10 км",
+      "Темп 4:08 /км, жара 30 °C.",
+      "Train. Think. Explore.",
+    ].join("\n");
+    const out = formatDraft(raw);
+
+    expect(out).toContain("Эль-Аламейн");
+    expect(out).not.toMatch(/[‑  ]/);
+    expect(out).toContain("4:08 /км");
+  });
+
+  it("убирает символы нулевой ширины", () => {
+    const out = formatDraft("Финиш​ в 41:20.\nTrain. Think. Explore.");
+    expect(out).not.toMatch(/[​-‍﻿]/);
+    expect(out).toContain("Финиш в 41:20.");
+  });
+
   it("экранирует HTML-спецсимволы в теле", () => {
     const out = formatDraft("Темп < 3:40 & набор > 100 м.\nTrain. Think. Explore.");
     expect(out).toContain("Темп &lt; 3:40 &amp; набор &gt; 100 м.");
