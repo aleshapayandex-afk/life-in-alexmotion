@@ -1,4 +1,5 @@
 import type { Env } from "../types";
+import { capText } from "../templates";
 
 const API_BASE = "https://api.telegram.org";
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -89,7 +90,13 @@ function messageId(resp: unknown): number | null {
   return r?.result?.message_id ?? null;
 }
 
-/** Отправка текстового сообщения. `extra` — доп. поля (например, parse_mode). */
+/**
+ * Отправка текстового сообщения. `extra` — доп. поля (например, parse_mode).
+ *
+ * Текст проходит через capText: всё, что бот отвечает владельцу, идёт сюда,
+ * поэтому лимит 4096 проверяется один раз в корне, а не в каждой команде.
+ * Публикация в канал (postText) намеренно идёт мимо — пост обрезать нельзя.
+ */
 export function sendMessage(
   env: Env,
   chatId: string | number,
@@ -97,7 +104,12 @@ export function sendMessage(
   fetchImpl: typeof fetch = fetch,
   extra: Record<string, unknown> = {},
 ): Promise<unknown> {
-  return callTelegram(env, "sendMessage", { chat_id: chatId, text, ...extra }, fetchImpl);
+  return callTelegram(
+    env,
+    "sendMessage",
+    { chat_id: chatId, text: capText(text), ...extra },
+    fetchImpl,
+  );
 }
 
 /** Публикация текстового поста в канал. Возвращает message_id или null. */

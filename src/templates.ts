@@ -12,6 +12,33 @@ export function ensureSignature(text: string): string {
   return `${trimmed}\n\n${SIGNATURE}`;
 }
 
+/** Хвост, которым помечаем обрезанное сообщение. */
+const TRUNCATION_MARK = "\n\n…обрезано";
+
+/**
+ * Приводит исходящее сообщение к лимиту Telegram.
+ *
+ * Зачем. Длинный список inbox, длинный черновик или длинный ответ модели легко
+ * перевалят за 4096 символов, и Bot API ответит 400 — сообщение просто не дойдёт.
+ * Лучше обрезать с явной пометкой, чем потерять целиком.
+ *
+ * Режем по переносу строки, если он есть в разумной близости от края, и никогда
+ * не рвём HTML-тег пополам: черновики уходят с parse_mode HTML.
+ */
+export function capText(text: string, limit: number = TEXT_LIMIT): string {
+  if (text.length <= limit) return text;
+
+  const room = limit - TRUNCATION_MARK.length;
+  let cut = text.lastIndexOf("\n", room);
+  if (cut < room / 2) cut = room;
+
+  const lastOpen = text.lastIndexOf("<", cut);
+  const lastClose = text.lastIndexOf(">", cut);
+  if (lastOpen > lastClose) cut = lastOpen;
+
+  return text.slice(0, cut).trimEnd() + TRUNCATION_MARK;
+}
+
 export type ValidationResult = { ok: true; text: string } | { ok: false; error: string };
 
 /**
