@@ -34,7 +34,7 @@ const EXAMPLES = [
   { file: "30_saqqararun.md", note: "Рубленый, честный репортаж (TRAIN)" },
   { file: "29_anonsbota.md", note: "Инженерный разбор своей системы (THINK)" },
   { file: "34_luxor.md", note: "Плавный, бытовой (EXPLORE)" },
-  { file: "26_dr.md", note: "Рефлексивный, без цифр, благодарный (LIFE)" },
+  { file: "24_prognozchm.md", note: "Итог с благодарностью и списком результатов (LIFE)" },
 ];
 
 function readPost(file) {
