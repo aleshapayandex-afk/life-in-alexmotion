@@ -1,16 +1,10 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { env } from "cloudflare:test";
 import { parseInboxItem, intakeMessage } from "../src/inbox-intake";
 import { listNewInbox, getInbox } from "../src/lib/db";
 import type { Env, TgMessage } from "../src/types";
 
 const testEnv = env as unknown as Env;
-
-beforeAll(async () => {
-  await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
-  );
-});
 
 function baseMsg(over: Partial<TgMessage>): TgMessage {
   return {

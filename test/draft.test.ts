@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import { env } from "cloudflare:test";
 import { buildSystem, generateDraft } from "../src/lib/claude";
 import { resolveMaterial } from "../src/commands/draft";
@@ -7,12 +7,6 @@ import { STYLE_GUIDE } from "../src/voice";
 import type { Env } from "../src/types";
 
 const testEnv = env as unknown as Env;
-
-beforeAll(async () => {
-  await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
-  );
-});
 
 /** Мок fetch с программируемой последовательностью статусов. */
 function mockClaude(statuses: number[], text = "Готовый пост\n\nTrain. Think. Explore.") {

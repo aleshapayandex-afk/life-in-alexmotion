@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { env } from "cloudflare:test";
 import { VOICE_EXAMPLES } from "../src/voice-examples.generated";
 import { buildSystemPrompt } from "../src/lib/ai";
@@ -7,15 +7,6 @@ import { insertInbox } from "../src/lib/db";
 import type { Env } from "../src/types";
 
 const testEnv = env as unknown as Env;
-
-beforeAll(async () => {
-  await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
-  );
-  await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS drafts (id INTEGER PRIMARY KEY AUTOINCREMENT, inbox_id INTEGER, content TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'draft', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
-  );
-});
 
 beforeEach(async () => {
   await testEnv.DB.exec("DELETE FROM inbox;");
