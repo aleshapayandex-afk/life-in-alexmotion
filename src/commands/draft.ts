@@ -4,6 +4,7 @@ import { generateDraft } from "../lib/ai";
 import { VOICE_EXAMPLES } from "../voice-examples.generated";
 import { replyToOwner } from "../lib/telegram";
 import { formatDraft } from "../draft-format";
+import { echoWarning } from "../echo-check";
 
 /**
  * Определяет материал для черновика по аргументу команды.
@@ -62,4 +63,9 @@ export async function handleDraft(
 
   await insertDraft(env, draft, resolved.inboxId);
   await replyToOwner(env, formatDraft(draft), fetchImpl, { parse_mode: "HTML" });
+
+  // Отдельным сообщением, а не внутри черновика: черновик владелец копирует
+  // целиком, и предупреждение уехало бы в канал вместе с текстом.
+  const warning = echoWarning(draft, VOICE_EXAMPLES);
+  if (warning) await replyToOwner(env, warning, fetchImpl);
 }
