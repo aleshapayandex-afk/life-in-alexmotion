@@ -17,11 +17,11 @@ export class AiError extends Error {
   }
 }
 
-/** Системный промпт: стиль канала + недавние посты для согласованности тона. */
-export function buildSystemPrompt(recentPosts: string[]): string {
-  if (recentPosts.length === 0) return STYLE_GUIDE;
-  const ctx = recentPosts.map((p, i) => `[${i + 1}]\n${p}`).join("\n\n---\n\n");
-  return `${STYLE_GUIDE}\n\nНЕДАВНИЕ ПОСТЫ КАНАЛА (для согласованности тона, не копируй дословно):\n\n${ctx}`;
+/** Системный промпт: правила стиля + эталонные посты автора для тон-матчинга. */
+export function buildSystemPrompt(examples: readonly string[]): string {
+  if (examples.length === 0) return STYLE_GUIDE;
+  const ctx = examples.map((p, i) => `[${i + 1}]\n${p}`).join("\n\n---\n\n");
+  return `${STYLE_GUIDE}\n\nЭТАЛОНЫ ГОЛОСА (реальные посты автора, не копируй дословно):\n\n${ctx}`;
 }
 
 const IDEAS_SYSTEM = `Ты помогаешь автору Telegram-канала «Life in AlexMotion» придумывать темы для постов. Рубрики: TRAIN (бег, кроссфит, сноуборд), THINK (AI, технологии, стройка проекта, системное мышление), EXPLORE (путешествия, локации), LIFE (дисциплина, рефлексия). Тон автора — честный, конкретный, с цифрами, без коучинговых штампов.
@@ -52,12 +52,12 @@ async function run(
 export function generateDraft(
   env: Env,
   material: string,
-  recentPosts: string[],
+  examples: readonly string[],
   runner: AiRunner = (m, i) => env.AI.run(m, i),
 ): Promise<string> {
   return run(
     env,
-    buildSystemPrompt(recentPosts),
+    buildSystemPrompt(examples),
     `Материал:\n\n${material}\n\nЗадача - написать пост для канала «Life in AlexMotion» в этом стиле. Найди историю внутри материала, не пересказывай его. Верни только текст поста, без пояснений.`,
     runner,
   );

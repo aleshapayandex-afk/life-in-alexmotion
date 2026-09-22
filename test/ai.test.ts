@@ -26,7 +26,7 @@ describe("buildSystemPrompt", () => {
     const s = buildSystemPrompt(["Пост 1", "Пост 2"]);
     expect(s).toContain(STYLE_GUIDE);
     expect(s).toContain("Пост 1");
-    expect(s).toContain("НЕДАВНИЕ ПОСТЫ");
+    expect(s).toContain("ЭТАЛОНЫ ГОЛОСА");
   });
 });
 

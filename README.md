@@ -7,7 +7,7 @@ Cloudflare Worker + D1. Приём материалов (inbox), AI-чернов
 
 ## Статус
 
-- ✅ **Фаза 0** — контент-фундамент (`voice.md`, `content/real-posts.md`)
+- ✅ **Фаза 0** — контент-фундамент (`voice.md`, `content/posts/`)
 - ✅ **Фаза 1** — каркас Worker: webhook + auth (secret_token + user_id) + дедуп + D1
 - ✅ **Фаза 2** — inbox (приём текста/фото/видео) + `/inbox` + `/publish`
 - ✅ **Фаза 3** — Draft Agent: `/draft` (генерация + voice.md)
@@ -54,7 +54,8 @@ test/
   cron.test.ts      — сценарий 5
   idea.test.ts      — контекст идей
 voice.md            — стиль канала (источник для src/voice.ts)
-content/            — реальные посты-эталоны
+content/posts/      — корпус реальных постов канала (источник эталонов голоса)
+statejnik/          — «Скилл статей»: конфиг, методология, инструменты
 ```
 
 ## Разработка

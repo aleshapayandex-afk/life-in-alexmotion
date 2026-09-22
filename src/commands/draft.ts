@@ -1,6 +1,7 @@
 import type { Env } from "../types";
 import { getInbox, insertDraft } from "../lib/db";
 import { generateDraft } from "../lib/ai";
+import { VOICE_EXAMPLES } from "../voice-examples.generated";
 import { replyToOwner } from "../lib/telegram";
 import { formatDraft } from "../draft-format";
 
@@ -51,7 +52,7 @@ export async function handleDraft(
 
   let draft: string;
   try {
-    draft = await generateDraft(env, resolved.material, []);
+    draft = await generateDraft(env, resolved.material, VOICE_EXAMPLES);
   } catch (err) {
     console.error("generateDraft failed", err);
     const detail = err instanceof Error ? err.message : String(err);
