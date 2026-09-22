@@ -21,7 +21,7 @@
  * в промпт НЕ идёт: четыре чётких образца работают лучше тридцати четырёх
  * средних, а каждый лишний пост — это контекст в каждом запросе к модели.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -49,6 +49,35 @@ function readPost(file) {
   }
 }
 
+/**
+ * Линт корпуса: тире любого вида и «ё» запрещены правилами канала (voice.md).
+ *
+ * Проверяем ВСЮ папку, а не только четыре отобранных файла: корпус кормит
+ * и промпт бота, и тон-матчинг «Скилла статей». Один пост с «ё», вставленный
+ * из чужого источника, тихо учит обоих нарушать правило - ровно так в корпус
+ * когда-то попали 10 «ё» вместе с текстами из старого content/real-posts.md.
+ */
+function lintCorpus() {
+  const problems = [];
+  for (const file of readdirSync(CORPUS).filter((f) => f.endsWith(".md")).sort()) {
+    const text = readFileSync(join(CORPUS, file), "utf8");
+    const dashes = (text.match(/[\u2010-\u2015\u2212]/g) ?? []).length;
+    const yo = (text.match(/[ёЁ]/g) ?? []).length;
+    if (dashes || yo) {
+      const what = [dashes && `тире: ${dashes}`, yo && `«ё»: ${yo}`].filter(Boolean).join(", ");
+      problems.push(`  content/posts/${file} — ${what}`);
+    }
+  }
+  if (problems.length) {
+    console.error(
+      "корпус нарушает правила voice.md (только дефис, только «е»):\n" +
+        problems.join("\n") +
+        "\nПочини файлы: тире → дефис с пробелами, «ё» → «е».",
+    );
+    process.exit(1);
+  }
+}
+
 function render() {
   // JSON.stringify, а не шаблонные строки: в постах встречаются обратные
   // кавычки и знак доллара, на шаблонной строке это сломало бы TypeScript.
@@ -67,6 +96,8 @@ ${entries}
 ];
 `;
 }
+
+lintCorpus();
 
 const want = render();
 const check = process.argv.includes("--check");
