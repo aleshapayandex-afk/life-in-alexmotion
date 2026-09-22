@@ -2,21 +2,32 @@ import type { Env } from "../types";
 
 export type InboxStatus = "new" | "used" | "archived";
 
+/**
+ * Тип записи inbox: сырьё для /draft или уже готовый текст.
+ * Смысл колонки задан миграцией 0004 (к удалённой kind из 0001 отношения нет).
+ */
+export type InboxKind = "raw" | "post";
+
 export interface InboxItem {
   id: number;
   text: string | null;
+  kind: InboxKind;
   status: InboxStatus;
   created_at: string;
 }
 
 export interface NewInboxInput {
   text: string;
+  /** По умолчанию 'raw': всё, что присылает владелец боту, — сырьё. */
+  kind?: InboxKind;
 }
 
 /** Вставка входящего материала. Возвращает id новой записи. */
 export async function insertInbox(env: Env, item: NewInboxInput): Promise<number> {
-  const res = await env.DB.prepare(`INSERT INTO inbox (text, status) VALUES (?, 'new')`)
-    .bind(item.text)
+  const res = await env.DB.prepare(
+    `INSERT INTO inbox (text, kind, status) VALUES (?, ?, 'new')`,
+  )
+    .bind(item.text, item.kind ?? "raw")
     .run();
   return Number(res.meta.last_row_id);
 }
@@ -24,7 +35,7 @@ export async function insertInbox(env: Env, item: NewInboxInput): Promise<number
 /** Список нового сырья (одним запросом, без N+1). */
 export async function listNewInbox(env: Env, limit = 50): Promise<InboxItem[]> {
   const res = await env.DB.prepare(
-    `SELECT id, text, status, created_at
+    `SELECT id, text, kind, status, created_at
      FROM inbox WHERE status = 'new' ORDER BY created_at ASC, id ASC LIMIT ?`,
   )
     .bind(limit)
@@ -35,7 +46,7 @@ export async function listNewInbox(env: Env, limit = 50): Promise<InboxItem[]> {
 /** Одна запись inbox по id. */
 export async function getInbox(env: Env, id: number): Promise<InboxItem | null> {
   const row = await env.DB.prepare(
-    `SELECT id, text, status, created_at FROM inbox WHERE id = ?`,
+    `SELECT id, text, kind, status, created_at FROM inbox WHERE id = ?`,
   )
     .bind(id)
     .first<InboxItem>();
