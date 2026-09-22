@@ -74,9 +74,16 @@ describe("formatDraft", () => {
   });
 
   it("убирает символы нулевой ширины", () => {
-    const out = formatDraft("Финиш​ в 41:20.\nTrain. Think. Explore.");
-    expect(out).not.toMatch(/[​-‍﻿]/);
+    const out = formatDraft("Финиш​﻿ в 41:20.\nTrain. Think. Explore.");
+    expect(out).not.toMatch(/[​⁠﻿]/);
     expect(out).toContain("Финиш в 41:20.");
+  });
+
+  it("не ломает составные эмодзи: ZWJ обязан выжить", () => {
+    // 🏃‍♂️ = бегун + ZWJ + знак мужского пола + VS16. Если срезать U+200D,
+    // эмодзи распадается на два отдельных глифа, а он у автора в наборе.
+    const out = formatDraft("Alamein 10K \u{1F3C3}‍♂️\nTrain. Think. Explore.");
+    expect(out).toContain("\u{1F3C3}‍♂️");
   });
 
   it("экранирует HTML-спецсимволы в теле", () => {
