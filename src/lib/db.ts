@@ -72,6 +72,45 @@ export async function insertDraft(
   return Number(res.meta.last_row_id);
 }
 
+/** Удалить запись inbox. */
+export async function deleteInbox(env: Env, id: number): Promise<void> {
+  await env.DB.prepare(`DELETE FROM inbox WHERE id = ?`).bind(id).run();
+}
+
+export interface DraftItem {
+  id: number;
+  inbox_id: number | null;
+  content: string;
+  status: string;
+  created_at: string;
+}
+
+/** Список черновиков, новые сверху. */
+export async function listDrafts(env: Env, limit = 50): Promise<DraftItem[]> {
+  const res = await env.DB.prepare(
+    `SELECT id, inbox_id, content, status, created_at
+     FROM drafts ORDER BY created_at DESC, id DESC LIMIT ?`,
+  )
+    .bind(limit)
+    .all<DraftItem>();
+  return res.results ?? [];
+}
+
+/** Один черновик по id. */
+export async function getDraft(env: Env, id: number): Promise<DraftItem | null> {
+  const row = await env.DB.prepare(
+    `SELECT id, inbox_id, content, status, created_at FROM drafts WHERE id = ?`,
+  )
+    .bind(id)
+    .first<DraftItem>();
+  return row ?? null;
+}
+
+/** Удалить черновик. */
+export async function deleteDraft(env: Env, id: number): Promise<void> {
+  await env.DB.prepare(`DELETE FROM drafts WHERE id = ?`).bind(id).run();
+}
+
 // --- Состояние диалога владельца (двухшаговые команды) ---
 
 /** Текущее отложенное действие владельца (например, 'draft') или null. */
