@@ -60,3 +60,26 @@ describe("проверка владельца (сценарий 3)", () => {
     expect(isOwner(update, testEnv)).toBe(false);
   });
 });
+
+describe("проверка владельца — callback_query", () => {
+  it("пропускает владельца по callback_query.from.id", () => {
+    const ownerId = Number(testEnv.OWNER_USER_ID);
+    const update: TgUpdate = {
+      update_id: 3,
+      callback_query: {
+        id: "cbq-1",
+        from: { id: ownerId, is_bot: false },
+        data: "cancel",
+      },
+    };
+    expect(isOwner(update, testEnv)).toBe(true);
+  });
+
+  it("отклоняет чужого в callback_query", () => {
+    const update: TgUpdate = {
+      update_id: 4,
+      callback_query: { id: "cbq-2", from: { id: 999999999, is_bot: false }, data: "cancel" },
+    };
+    expect(isOwner(update, testEnv)).toBe(false);
+  });
+});
