@@ -7,6 +7,25 @@ import { handleDraft } from "./commands/draft";
 import { handleDrafts, handleDraftView, handleDraftDelete } from "./commands/drafts";
 import { handleIdea } from "./commands/idea";
 
+/**
+ * Команды вида «/cmd <id>», у которых пустой аргумент переводит бота в
+ * режим ожидания: следующее сообщение (номер) уходит в тот же обработчик,
+ * а не в inbox. Ключ — команда без ведущего «/».
+ */
+const PENDING_COMMANDS: Record<
+  string,
+  { prompt: string; handler: (env: Env, args: string, fetchImpl: typeof fetch) => Promise<void> }
+> = {
+  draft: {
+    prompt: "Жду материал для черновика. Пришли отдельным сообщением номер из inbox или тему.",
+    handler: handleDraft,
+  },
+  inbox_view: { prompt: "Пришли номер записи.", handler: handleInboxView },
+  inbox_del: { prompt: "Пришли номер записи.", handler: handleInboxDelete },
+  draft_view: { prompt: "Пришли номер черновика.", handler: handleDraftView },
+  draft_del: { prompt: "Пришли номер черновика.", handler: handleDraftDelete },
+};
+
 /** Разбор «/command аргументы» из текста сообщения. */
 export function parseCommand(
   text: string | undefined,
@@ -36,15 +55,13 @@ export async function handleMessage(
   const parsed = parseCommand(msg.text);
 
   if (parsed) {
-    // /draft без аргументов — переходим в режим ожидания материала.
-    // Следующее сообщение (номер inbox или тема) уйдёт в Draft Agent.
-    if (parsed.command === "/draft" && !parsed.args) {
-      await setPending(env, "draft");
-      await replyToOwner(
-        env,
-        "Жду материал для черновика. Пришли отдельным сообщением номер из inbox или тему.",
-        fetchImpl,
-      );
+    // Команда без аргумента из PENDING_COMMANDS — переходим в режим ожидания:
+    // следующее сообщение (номер) уйдёт в тот же обработчик.
+    const pendingKey = parsed.command.slice(1);
+    const pendingEntry = PENDING_COMMANDS[pendingKey];
+    if (pendingEntry && !parsed.args) {
+      await setPending(env, pendingKey);
+      await replyToOwner(env, pendingEntry.prompt, fetchImpl);
       return;
     }
 
@@ -101,11 +118,13 @@ export async function handleMessage(
     }
   }
 
-  // Не команда. Если ждём материал для черновика — отдаём его в Draft Agent.
+  // Не команда. Если ждём номер/материал для одной из PENDING_COMMANDS —
+  // отдаём текст сообщения в её обработчик, а не в inbox.
   const pending = await getPending(env);
-  if (pending === "draft") {
+  const pendingEntry = pending ? PENDING_COMMANDS[pending] : undefined;
+  if (pendingEntry) {
     await clearPending(env);
-    await handleDraft(env, msg.text?.trim() ?? "", fetchImpl);
+    await pendingEntry.handler(env, msg.text?.trim() ?? "", fetchImpl);
     return;
   }
 
