@@ -13,7 +13,7 @@ Cloudflare Worker + D1. Приём материалов (inbox), AI-чернов
 - ✅ **Фаза 3** — Draft Agent: `/draft` (генерация + voice.md)
 - ✅ **Фаза 4** — Cron-дайджест (недельный) + `/idea` (генерация тем)
 
-**MVP задеплоен и работает.** Команды: `/start`, `/inbox`, `/idea`, `/draft`, `/publish`.
+**MVP задеплоен и работает.** Команды: `/start`, `/inbox`, `/inbox_view`, `/inbox_del`, `/idea`, `/draft`, `/drafts`, `/draft_view`, `/draft_del`.
 Генерация — на **Workers AI** (Llama 3.3 70B, бесплатно). Claude (`lib/claude.ts`)
 оставлен как альтернатива для топ-качества: переключается импортом в `commands/draft.ts`
 и `commands/idea.ts` + секрет `CLAUDE_API_KEY`.
@@ -29,6 +29,7 @@ src/
   auth.ts           — secret_token + проверка владельца
   dedup.ts          — идемпотентность по update_id
   router.ts         — разбор команд, маршрутизация сообщений
+  callback-router.ts — обработка нажатий inline-кнопок (подтверждение удаления)
   inbox-intake.ts   — приём текстовых заметок в inbox
   templates.ts      — подпись, лимиты Telegram, capText (обрезка исходящих)
   draft-format.ts   — нормализация типографики + HTML-рендер черновика
@@ -37,8 +38,9 @@ src/
   voice-examples.generated.ts — эталоны из content/posts (npm run gen:voice)
   types.ts          — Env + минимальные типы Telegram
   commands/
-    inbox.ts        — /inbox (список сырья и готовых текстов)
+    inbox.ts        — /inbox, /inbox_view, /inbox_del (сырьё и готовые тексты)
     draft.ts        — /draft (генерация черновика)
+    drafts.ts       — /drafts, /draft_view, /draft_del (список/просмотр/удаление черновиков)
     idea.ts         — /idea (генерация тем)
   lib/
     telegram.ts     — клиент Bot API (ретраи, таймаут, send*)
