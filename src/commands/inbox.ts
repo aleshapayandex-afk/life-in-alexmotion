@@ -1,6 +1,7 @@
 import type { Env } from "../types";
-import { listNewInbox, type InboxItem, type InboxKind } from "../lib/db";
+import { listNewInbox, getInbox, type InboxItem, type InboxKind } from "../lib/db";
 import { replyToOwner } from "../lib/telegram";
+import { buildConfirmKeyboard } from "../lib/confirm-keyboard";
 
 /** Значок по типу записи: сырьё для черновика или уже готовый текст. */
 function kindIcon(kind: InboxKind): string {
@@ -35,4 +36,53 @@ export async function handleInbox(
 ): Promise<void> {
   const items = await listNewInbox(env);
   await replyToOwner(env, renderInboxList(items), fetchImpl);
+}
+
+/** Разбор аргумента команды: только положительное целое число. */
+function parseId(args: string): number | null {
+  const arg = args.trim();
+  return /^\d+$/.test(arg) ? Number(arg) : null;
+}
+
+/** Обработчик /inbox_view <id> — полный текст записи. */
+export async function handleInboxView(
+  env: Env,
+  args: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<void> {
+  const id = parseId(args);
+  if (id === null) {
+    await replyToOwner(env, "Пришли номер записи.", fetchImpl);
+    return;
+  }
+  const item = await getInbox(env, id);
+  if (!item) {
+    await replyToOwner(env, `Запись #${id} не найдена.`, fetchImpl);
+    return;
+  }
+  await replyToOwner(env, `#${id}:\n\n${item.text ?? "(пусто)"}`, fetchImpl);
+}
+
+/** Обработчик /inbox_del <id> — показывает запись и просит подтвердить удаление кнопкой. */
+export async function handleInboxDelete(
+  env: Env,
+  args: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<void> {
+  const id = parseId(args);
+  if (id === null) {
+    await replyToOwner(env, "Пришли номер записи.", fetchImpl);
+    return;
+  }
+  const item = await getInbox(env, id);
+  if (!item) {
+    await replyToOwner(env, `Запись #${id} не найдена.`, fetchImpl);
+    return;
+  }
+  await replyToOwner(
+    env,
+    `Удалить запись #${id} из inbox?\n\n${item.text ?? "(пусто)"}`,
+    fetchImpl,
+    { reply_markup: buildConfirmKeyboard("del_inbox", id) },
+  );
 }
