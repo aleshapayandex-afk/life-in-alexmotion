@@ -1,7 +1,8 @@
 import type { Env, TgUpdate } from "./types";
-import { isValidWebhookSecret, isOwner, extractMessage } from "./auth";
+import { isValidWebhookSecret, isOwner, extractMessage, extractCallbackQuery } from "./auth";
 import { markUpdateProcessed } from "./dedup";
 import { handleMessage } from "./router";
+import { handleCallbackQuery } from "./callback-router";
 import { handleScheduled } from "./cron";
 import { replyToOwner } from "./lib/telegram";
 
@@ -38,18 +39,30 @@ export default {
       return new Response("ok", { status: 200 });
     }
 
-    const msg = extractMessage(update);
-    if (!msg) {
-      return new Response("ok", { status: 200 });
-    }
-
-    // 4. Идемпотентность: дубль update_id — no-op.
+    // 4. Идемпотентность: дубль update_id — no-op. Общая для всех типов
+    //    апдейтов (message и callback_query).
     const isNew = await markUpdateProcessed(env, update.update_id);
     if (!isNew) {
       return new Response("ok", { status: 200 });
     }
 
-    // 5. Отвечаем Telegram мгновенно, тяжёлую работу — в waitUntil.
+    // 5. Нажатие inline-кнопки — отдельная ветка, до разбора message.
+    const cq = extractCallbackQuery(update);
+    if (cq) {
+      ctx.waitUntil(
+        handleCallbackQuery(env, cq).catch((err) => {
+          console.error("handleCallbackQuery failed", err);
+        }),
+      );
+      return new Response("ok", { status: 200 });
+    }
+
+    const msg = extractMessage(update);
+    if (!msg) {
+      return new Response("ok", { status: 200 });
+    }
+
+    // 6. Отвечаем Telegram мгновенно, тяжёлую работу — в waitUntil.
     //    Дедуп уже зафиксирован (повторов не будет), поэтому при падении
     //    обработчика обязательно уведомляем владельца — иначе команда тихо теряется.
     ctx.waitUntil(
