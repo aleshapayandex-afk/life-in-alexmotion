@@ -2,8 +2,9 @@ import type { Env, TgMessage } from "./types";
 import { replyToOwner, setMyCommands } from "./lib/telegram";
 import { getPending, setPending, clearPending } from "./lib/db";
 import { intakeMessage } from "./inbox-intake";
-import { handleInbox } from "./commands/inbox";
+import { handleInbox, handleInboxView, handleInboxDelete } from "./commands/inbox";
 import { handleDraft } from "./commands/draft";
+import { handleDrafts, handleDraftView, handleDraftDelete } from "./commands/drafts";
 import { handleIdea } from "./commands/idea";
 
 /** Разбор «/command аргументы» из текста сообщения. */
@@ -58,8 +59,13 @@ export async function handleMessage(
           "Привет! Это бот канала Life in AlexMotion.\n\n" +
             "Команды:\n" +
             "/inbox — показать накопленное сырьё\n" +
+            "/inbox_view <id> — полный текст записи\n" +
+            "/inbox_del <id> — удалить запись\n" +
             "/idea — идеи для постов\n" +
-            "/draft — сгенерировать черновик (затем пришли номер или тему)\n\n" +
+            "/draft — сгенерировать черновик (затем пришли номер или тему)\n" +
+            "/drafts — список сохранённых черновиков\n" +
+            "/draft_view <id> — полный текст черновика\n" +
+            "/draft_del <id> — удалить черновик\n\n" +
             "Просто пришли текст — сохраню в inbox.\n\n" +
             "Train. Think. Explore.",
           fetchImpl,
@@ -68,8 +74,23 @@ export async function handleMessage(
       case "/inbox":
         await handleInbox(env, fetchImpl);
         return;
+      case "/inbox_view":
+        await handleInboxView(env, parsed.args, fetchImpl);
+        return;
+      case "/inbox_del":
+        await handleInboxDelete(env, parsed.args, fetchImpl);
+        return;
       case "/draft":
         await handleDraft(env, parsed.args, fetchImpl);
+        return;
+      case "/drafts":
+        await handleDrafts(env, fetchImpl);
+        return;
+      case "/draft_view":
+        await handleDraftView(env, parsed.args, fetchImpl);
+        return;
+      case "/draft_del":
+        await handleDraftDelete(env, parsed.args, fetchImpl);
         return;
       case "/idea":
         await handleIdea(env, parsed.args, fetchImpl);

@@ -215,8 +215,13 @@ export function setMyCommands(
     {
       commands: [
         { command: "inbox", description: "Показать накопленное сырьё" },
+        { command: "inbox_view", description: "Полный текст записи inbox" },
+        { command: "inbox_del", description: "Удалить запись inbox" },
         { command: "idea", description: "Идеи для постов" },
         { command: "draft", description: "Сгенерировать черновик поста" },
+        { command: "drafts", description: "Список сохранённых черновиков" },
+        { command: "draft_view", description: "Полный текст черновика" },
+        { command: "draft_del", description: "Удалить черновик" },
       ],
     },
     fetchImpl,
