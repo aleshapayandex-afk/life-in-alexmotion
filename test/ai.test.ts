@@ -26,7 +26,7 @@ describe("buildSystemPrompt", () => {
     const s = buildSystemPrompt(["Пост 1", "Пост 2"]);
     expect(s).toContain(STYLE_GUIDE);
     expect(s).toContain("Пост 1");
-    expect(s).toContain("НЕДАВНИЕ ПОСТЫ");
+    expect(s).toContain("ЭТАЛОНЫ ГОЛОСА");
   });
 });
 
@@ -47,6 +47,20 @@ describe("generateDraft (Workers AI)", () => {
   it("пустой ответ модели → ошибка", async () => {
     const empty: AiRunner = async () => ({ response: "" });
     await expect(generateDraft(testEnv, "тема", [], empty)).rejects.toThrow();
+  });
+
+  it("user-сообщение не содержит хардкод «три шага»", async () => {
+    const { runner, calls } = mockRunner();
+    await generateDraft(testEnv, "тема", [], runner);
+    const content = calls[0]!.input.messages[1].content as string;
+    expect(content).not.toContain("Три шага");
+    expect(content).not.toContain("конкретика, цифры, честный итог");
+  });
+
+  it("использует модель gpt-oss-120b по умолчанию", async () => {
+    const { runner, calls } = mockRunner();
+    await generateDraft(testEnv, "тема", [], runner);
+    expect(calls[0]!.model).toBe("@cf/openai/gpt-oss-120b");
   });
 });
 

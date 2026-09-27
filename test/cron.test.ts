@@ -1,16 +1,10 @@
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { env } from "cloudflare:test";
 import { handleScheduled } from "../src/cron";
 import { insertInbox } from "../src/lib/db";
 import type { Env } from "../src/types";
 
 const testEnv = env as unknown as Env;
-
-beforeAll(async () => {
-  await testEnv.DB.exec(
-    "CREATE TABLE IF NOT EXISTS inbox (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT, status TEXT NOT NULL DEFAULT 'new', created_at TEXT NOT NULL DEFAULT (datetime('now')));",
-  );
-});
 
 beforeEach(async () => {
   await testEnv.DB.exec("DELETE FROM inbox;");

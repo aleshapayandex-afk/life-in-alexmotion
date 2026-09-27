@@ -22,3 +22,9 @@ Thumbs.db
 
 # Ретроспективы (по договорённости)
 retrospectives/
+
+# Graphify
+graphify-out/
+
+# Python-кеш инструментов скилла
+__pycache__/

@@ -1,4 +1,5 @@
 import type { Env } from "../types";
+import { capText } from "../templates";
 
 const API_BASE = "https://api.telegram.org";
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -89,7 +90,13 @@ function messageId(resp: unknown): number | null {
   return r?.result?.message_id ?? null;
 }
 
-/** Отправка текстового сообщения. `extra` — доп. поля (например, parse_mode). */
+/**
+ * Отправка текстового сообщения. `extra` — доп. поля (например, parse_mode).
+ *
+ * Текст проходит через capText: всё, что бот отвечает владельцу, идёт сюда,
+ * поэтому лимит 4096 проверяется один раз в корне, а не в каждой команде.
+ * Публикация в канал (postText) намеренно идёт мимо — пост обрезать нельзя.
+ */
 export function sendMessage(
   env: Env,
   chatId: string | number,
@@ -97,7 +104,12 @@ export function sendMessage(
   fetchImpl: typeof fetch = fetch,
   extra: Record<string, unknown> = {},
 ): Promise<unknown> {
-  return callTelegram(env, "sendMessage", { chat_id: chatId, text, ...extra }, fetchImpl);
+  return callTelegram(
+    env,
+    "sendMessage",
+    { chat_id: chatId, text: capText(text), ...extra },
+    fetchImpl,
+  );
 }
 
 /** Публикация текстового поста в канал. Возвращает message_id или null. */
@@ -153,6 +165,35 @@ export async function sendDocument(
   return messageId(resp);
 }
 
+/** Убирает "часики" на нажатой inline-кнопке; text — необязательный тост. */
+export function answerCallbackQuery(
+  env: Env,
+  callbackQueryId: string,
+  text?: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<unknown> {
+  const payload: Record<string, unknown> = { callback_query_id: callbackQueryId };
+  if (text) payload.text = text;
+  return callTelegram(env, "answerCallbackQuery", payload, fetchImpl);
+}
+
+/** Редактирует текст ранее отправленного сообщения (например, снять клавиатуру). */
+export function editMessageText(
+  env: Env,
+  chatId: string | number,
+  messageId: number,
+  text: string,
+  fetchImpl: typeof fetch = fetch,
+  extra: Record<string, unknown> = {},
+): Promise<unknown> {
+  return callTelegram(
+    env,
+    "editMessageText",
+    { chat_id: chatId, message_id: messageId, text: capText(text), ...extra },
+    fetchImpl,
+  );
+}
+
 /** Ответ владельцу в личку (chat_id == OWNER_USER_ID). */
 export function replyToOwner(
   env: Env,
@@ -174,8 +215,13 @@ export function setMyCommands(
     {
       commands: [
         { command: "inbox", description: "Показать накопленное сырьё" },
+        { command: "inbox_view", description: "Полный текст записи inbox" },
+        { command: "inbox_del", description: "Удалить запись inbox" },
         { command: "idea", description: "Идеи для постов" },
         { command: "draft", description: "Сгенерировать черновик поста" },
+        { command: "drafts", description: "Список сохранённых черновиков" },
+        { command: "draft_view", description: "Полный текст черновика" },
+        { command: "draft_del", description: "Удалить черновик" },
       ],
     },
     fetchImpl,

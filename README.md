@@ -7,13 +7,13 @@ Cloudflare Worker + D1. Приём материалов (inbox), AI-чернов
 
 ## Статус
 
-- ✅ **Фаза 0** — контент-фундамент (`voice.md`, `content/real-posts.md`)
+- ✅ **Фаза 0** — контент-фундамент (`voice.md`, `content/posts/`)
 - ✅ **Фаза 1** — каркас Worker: webhook + auth (secret_token + user_id) + дедуп + D1
 - ✅ **Фаза 2** — inbox (приём текста/фото/видео) + `/inbox` + `/publish`
 - ✅ **Фаза 3** — Draft Agent: `/draft` (генерация + voice.md)
 - ✅ **Фаза 4** — Cron-дайджест (недельный) + `/idea` (генерация тем)
 
-**MVP задеплоен и работает.** Команды: `/start`, `/inbox`, `/idea`, `/draft`, `/publish`.
+**MVP задеплоен и работает.** Команды: `/start`, `/inbox`, `/inbox_view`, `/inbox_del`, `/idea`, `/draft`, `/drafts`, `/draft_view`, `/draft_del`.
 Генерация — на **Workers AI** (Llama 3.3 70B, бесплатно). Claude (`lib/claude.ts`)
 оставлен как альтернатива для топ-качества: переключается импортом в `commands/draft.ts`
 и `commands/idea.ts` + секрет `CLAUDE_API_KEY`.
@@ -25,36 +25,41 @@ Cloudflare Worker + D1. Приём материалов (inbox), AI-чернов
 ```
 src/
   index.ts          — точка входа: fetch() (webhook) + scheduled() (cron)
-  cron.ts           — недельный дайджест inbox (детерминированный, без Claude)
+  cron.ts           — недельный дайджест inbox (детерминированный, без модели)
   auth.ts           — secret_token + проверка владельца
   dedup.ts          — идемпотентность по update_id
   router.ts         — разбор команд, маршрутизация сообщений
-  inbox-intake.ts   — приём текста/фото/видео в inbox (file_id)
-  templates.ts      — подпись + валидация поста (лимиты 4096/1024)
-  voice.ts          — STYLE_GUIDE: рантайм-копия voice.md для Claude
+  callback-router.ts — обработка нажатий inline-кнопок (подтверждение удаления)
+  inbox-intake.ts   — приём текстовых заметок в inbox
+  templates.ts      — подпись, лимиты Telegram, capText (обрезка исходящих)
+  draft-format.ts   — нормализация типографики + HTML-рендер черновика
+  echo-check.ts     — детектор дословных заимствований из эталонов
+  voice.ts          — STYLE_GUIDE: правила стиля, рантайм-копия voice.md
+  voice-examples.generated.ts — эталоны из content/posts (npm run gen:voice)
   types.ts          — Env + минимальные типы Telegram
   commands/
-    inbox.ts        — /inbox (список сырья)
-    publish.ts      — /publish (текст или inbox-id в канал)
-    draft.ts        — /draft (генерация черновика через Claude)
-    idea.ts         — /idea (генерация тем через Claude)
+    inbox.ts        — /inbox, /inbox_view, /inbox_del (сырьё и готовые тексты)
+    draft.ts        — /draft (генерация черновика)
+    drafts.ts       — /drafts, /draft_view, /draft_del (список/просмотр/удаление черновиков)
+    idea.ts         — /idea (генерация тем)
   lib/
     telegram.ts     — клиент Bot API (ретраи, таймаут, send*)
-    ai.ts           — Workers AI (Llama 3.3 70B) — активный провайдер генерации
-    claude.ts       — клиент Anthropic (альтернатива, не подключён; для топ-качества)
-    db.ts           — обёртки D1 (inbox, posts, drafts)
+    ai.ts           — Workers AI (gpt-oss-120b) — активный провайдер генерации
+    claude.ts       — клиент Anthropic (альтернатива, не подключён)
+    db.ts           — обёртки D1 (inbox, drafts, bot_state)
+scripts/
+  gen-voice-examples.mjs — эталоны голоса из content/posts; --check в npm test
 migrations/
-  0001_init.sql     — posts, inbox, drafts, processed_updates
+  0001_init.sql       — posts, inbox, drafts, processed_updates
+  0002_bot_state.sql  — bot_state (режим ожидания материала)
+  0003_drop_unused.sql— drop posts и медиа-колонок после удаления /publish
+  0004_inbox_kind.sql — inbox.kind: 'raw' (сырьё) | 'post' (готовый текст)
 test/
-  auth.test.ts      — сценарии 3,4
-  dedup.test.ts     — сценарий 1
-  inbox.test.ts     — сценарий 7
-  publish.test.ts   — сценарии 6,8
-  draft.test.ts     — сценарий 2
-  cron.test.ts      — сценарий 5
-  idea.test.ts      — контекст идей
-voice.md            — стиль канала (источник для src/voice.ts)
-content/            — реальные посты-эталоны
+  apply-migrations.ts — setup: накатывает migrations/ на тестовую D1
+  ...                 — по модулю на файл, запуск: npm test
+voice.md            — стиль канала (источник правил для src/voice.ts)
+content/posts/      — корпус реальных постов канала (источник эталонов голоса)
+statejnik/          — «Скилл статей»: конфиг, методология, инструменты
 ```
 
 ## Разработка

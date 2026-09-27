@@ -2,8 +2,10 @@ import type { Env } from "../types";
 import { STYLE_GUIDE } from "../voice";
 
 // Сильнейшая доступная инструктивная модель Workers AI на сегодня.
-const DEFAULT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-const MAX_TOKENS = 1024;
+const DEFAULT_MODEL = "@cf/openai/gpt-oss-120b";
+// gpt-oss-120b тратит часть бюджета на скрытый reasoning до финального текста,
+// поэтому лимит выше, чем нужно только для 1000-2000 знаков поста.
+const MAX_TOKENS = 3000;
 
 /** Инъекция вызова модели для тестируемости (по умолчанию — env.AI.run). */
 export type AiRunner = (model: string, input: unknown) => Promise<unknown>;
@@ -15,11 +17,11 @@ export class AiError extends Error {
   }
 }
 
-/** Системный промпт: стиль канала + недавние посты для согласованности тона. */
-export function buildSystemPrompt(recentPosts: string[]): string {
-  if (recentPosts.length === 0) return STYLE_GUIDE;
-  const ctx = recentPosts.map((p, i) => `[${i + 1}]\n${p}`).join("\n\n---\n\n");
-  return `${STYLE_GUIDE}\n\nНЕДАВНИЕ ПОСТЫ КАНАЛА (для согласованности тона, не копируй дословно):\n\n${ctx}`;
+/** Системный промпт: правила стиля + эталонные посты автора для тон-матчинга. */
+export function buildSystemPrompt(examples: readonly string[]): string {
+  if (examples.length === 0) return STYLE_GUIDE;
+  const ctx = examples.map((p, i) => `[${i + 1}]\n${p}`).join("\n\n---\n\n");
+  return `${STYLE_GUIDE}\n\nЭТАЛОНЫ ГОЛОСА (реальные посты автора, не копируй дословно):\n\n${ctx}`;
 }
 
 const IDEAS_SYSTEM = `Ты помогаешь автору Telegram-канала «Life in AlexMotion» придумывать темы для постов. Рубрики: TRAIN (бег, кроссфит, сноуборд), THINK (AI, технологии, стройка проекта, системное мышление), EXPLORE (путешествия, локации), LIFE (дисциплина, рефлексия). Тон автора — честный, конкретный, с цифрами, без коучинговых штампов.
@@ -39,9 +41,9 @@ async function run(
       { role: "user", content: user },
     ],
     max_tokens: MAX_TOKENS,
-  })) as { response?: string };
+  })) as { response?: string; choices?: { message?: { content?: string } }[] };
 
-  const text = res?.response?.trim();
+  const text = res?.response?.trim() ?? res.choices?.[0]?.message?.content?.trim();
   if (!text) throw new AiError("Пустой ответ модели");
   return text;
 }
@@ -50,13 +52,13 @@ async function run(
 export function generateDraft(
   env: Env,
   material: string,
-  recentPosts: string[],
+  examples: readonly string[],
   runner: AiRunner = (m, i) => env.AI.run(m, i),
 ): Promise<string> {
   return run(
     env,
-    buildSystemPrompt(recentPosts),
-    `Материал:\n\n${material}\n\nЗадача - написать пост для канала «Life in AlexMotion».\n\nТри шага:\n1. Найди самый интересный угол: что здесь честного, неожиданного или цепляющего? Не пересказывай - найди историю внутри.\n2. Начни с момента, который заставит остановиться при прокрутке. Не с предыстории.\n3. Напиши живой репортаж: конкретика, цифры, честный итог, взгляд вперёд.\n\nВерни только текст поста.`,
+    buildSystemPrompt(examples),
+    `Материал:\n\n${material}\n\nЗадача - написать пост для канала «Life in AlexMotion» в этом стиле. Найди историю внутри материала, не пересказывай его. Верни только текст поста, без пояснений.`,
     runner,
   );
 }

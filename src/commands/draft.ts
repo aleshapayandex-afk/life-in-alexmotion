@@ -1,17 +1,25 @@
 import type { Env } from "../types";
-import { getInbox, insertDraft } from "../lib/db";
+import { getInbox, insertDraft, type InboxKind } from "../lib/db";
 import { generateDraft } from "../lib/ai";
+import { VOICE_EXAMPLES } from "../voice-examples.generated";
 import { replyToOwner } from "../lib/telegram";
 import { formatDraft } from "../draft-format";
+import { echoWarning } from "../echo-check";
 
 /**
  * Определяет материал для черновика по аргументу команды.
  * Число → запись inbox; иначе → тема как есть.
+ *
+ * Отдаёт и kind: решение «генерировать или вернуть как есть» принимается
+ * здесь, в единственном месте, где мы вообще видим запись inbox.
  */
 export async function resolveMaterial(
   env: Env,
   args: string,
-): Promise<{ ok: true; material: string; inboxId: number | null } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; material: string; inboxId: number | null; kind: InboxKind }
+  | { ok: false; error: string }
+> {
   const arg = args.trim();
   if (!arg) {
     return { ok: false, error: "Пришли номер из inbox или тему." };
@@ -26,10 +34,11 @@ export async function resolveMaterial(
     if (!material) {
       return { ok: false, error: `В записи #${id} нет текста для черновика.` };
     }
-    return { ok: true, material, inboxId: id };
+    return { ok: true, material, inboxId: id, kind: item.kind };
   }
 
-  return { ok: true, material: arg, inboxId: null };
+  // Тема строкой — всегда сырьё: писать по ней пост это и есть задача.
+  return { ok: true, material: arg, inboxId: null, kind: "raw" };
 }
 
 /**
@@ -47,11 +56,20 @@ export async function handleDraft(
     return;
   }
 
+  // Готовый текст переписывать нечем и незачем: по нему черновик не пишут,
+  // его публикуют как есть. Через formatDraft всё же прогоняем - нормализация
+  // типографики и разметка нужны любому тексту, который уедет в канал.
+  // В drafts не пишем: это не черновик, а уже готовый пост.
+  if (resolved.kind === "post") {
+    await replyToOwner(env, formatDraft(resolved.material), fetchImpl, { parse_mode: "HTML" });
+    return;
+  }
+
   await replyToOwner(env, "🧠 Думаю над черновиком…", fetchImpl);
 
   let draft: string;
   try {
-    draft = await generateDraft(env, resolved.material, []);
+    draft = await generateDraft(env, resolved.material, VOICE_EXAMPLES);
   } catch (err) {
     console.error("generateDraft failed", err);
     const detail = err instanceof Error ? err.message : String(err);
@@ -61,4 +79,9 @@ export async function handleDraft(
 
   await insertDraft(env, draft, resolved.inboxId);
   await replyToOwner(env, formatDraft(draft), fetchImpl, { parse_mode: "HTML" });
+
+  // Отдельным сообщением, а не внутри черновика: черновик владелец копирует
+  // целиком, и предупреждение уехало бы в канал вместе с текстом.
+  const warning = echoWarning(draft, VOICE_EXAMPLES);
+  if (warning) await replyToOwner(env, warning, fetchImpl);
 }
