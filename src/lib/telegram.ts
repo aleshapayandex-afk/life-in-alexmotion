@@ -165,6 +165,35 @@ export async function sendDocument(
   return messageId(resp);
 }
 
+/** Убирает "часики" на нажатой inline-кнопке; text — необязательный тост. */
+export function answerCallbackQuery(
+  env: Env,
+  callbackQueryId: string,
+  text?: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<unknown> {
+  const payload: Record<string, unknown> = { callback_query_id: callbackQueryId };
+  if (text) payload.text = text;
+  return callTelegram(env, "answerCallbackQuery", payload, fetchImpl);
+}
+
+/** Редактирует текст ранее отправленного сообщения (например, снять клавиатуру). */
+export function editMessageText(
+  env: Env,
+  chatId: string | number,
+  messageId: number,
+  text: string,
+  fetchImpl: typeof fetch = fetch,
+  extra: Record<string, unknown> = {},
+): Promise<unknown> {
+  return callTelegram(
+    env,
+    "editMessageText",
+    { chat_id: chatId, message_id: messageId, text: capText(text), ...extra },
+    fetchImpl,
+  );
+}
+
 /** Ответ владельцу в личку (chat_id == OWNER_USER_ID). */
 export function replyToOwner(
   env: Env,
